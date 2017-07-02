@@ -21,8 +21,8 @@ v2f perp(v2f slope)
 {
 	v2f nextslope;
 	float magf, dx, dy;
-	nextslope.x = slope.x;
-	nextslope.y = slope.y;
+	nextslope.x = slope.y;
+	nextslope.y = slope.x;
 
 #if 01
 	if (slope.x > 0 &&
@@ -74,7 +74,7 @@ void main()
 	v2f currpt;
 	v2f curraccel;
 //	v2f nextdir;
-	int numexpand = 30;
+	int numexpand = 900;
 	int numpts = 90;
 	int expansioni;
 	int startpti;
@@ -121,8 +121,8 @@ void main()
 	masses[4].p.x = -7.9;
 	masses[4].p.y = -8.9f;
 
-	start.x = -4;
-	start.y = 11.2f;
+	start.x = -9;
+	start.y = 2.2f;
 	startdir.x = 1 / SPACING;
 	startdir.y = -0.1f / SPACING;
 	altdir = perp(startdir);
