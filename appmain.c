@@ -185,7 +185,7 @@ void main()
 				}
 
 				//perpdir = perp(curraccel);
-				perpdir = perp2(curraccel, M_PI/13.0f);
+				perpdir = perp2(curraccel, M_PI/19.0f);
 
 				dx = curraccel.x;
 				dy = curraccel.y;
