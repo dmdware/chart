@@ -98,7 +98,7 @@ void main()
 	float magf;
 	unsigned char temprgb[3];
 
-#define SPACING	0.2f
+#define SPACING	1.0f
 
 #define RGBX	512
 #define RGBY	512
@@ -185,7 +185,7 @@ void main()
 				}
 
 				//perpdir = perp(curraccel);
-				perpdir = perp2(curraccel, M_PI/19.0f);
+				perpdir = perp2(curraccel, - M_PI/19.0f);
 
 				dx = curraccel.x;
 				dy = curraccel.y;
