@@ -98,7 +98,7 @@ void main()
 	float magf;
 	unsigned char temprgb[3];
 
-#define SPACING	1.0f
+#define SPACING	0.2f
 
 #define RGBX	512
 #define RGBY	512
