@@ -66,6 +66,15 @@ v2f perp(v2f slope)
 	return nextslope;
 }
 
+v2f perp2(v2f s, float r)
+{
+	float r2 = M_PI - (M_PI/2.0f - atan2(s.y, s.x)) - r;
+	v2f s2;
+	s2.x = cos(r2);
+	s2.y = sin(r2);
+	return s2;
+}
+
 void main()
 {
 	v2f start;
@@ -175,7 +184,8 @@ void main()
 					curraccel.y += dy * masses[massi].gm / (dx*dx + dy*dy);
 				}
 
-				perpdir = perp(curraccel);
+				//perpdir = perp(curraccel);
+				perpdir = perp2(curraccel, M_PI/13.0f);
 
 				dx = curraccel.x;
 				dy = curraccel.y;
