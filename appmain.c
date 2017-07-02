@@ -181,8 +181,8 @@ void main()
 				dy = curraccel.y;
 				magf = sqrtf(dx*dx + dy*dy);
 
-				perpdir.x *= magf;
-				perpdir.y *= magf;
+				//perpdir.x *= magf;
+				//perpdir.y *= magf;
 
 				//perpdir.x /= 10;
 				//perpdir.y /= 10;
