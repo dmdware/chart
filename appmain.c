@@ -84,7 +84,7 @@ void main()
 	v2f curraccel;
 //	v2f nextdir;
 	int numexpand = 900;
-	int numpts = 90;
+	int numpts = 30;
 	int expansioni;
 	int startpti;
 	int startptj;
@@ -97,16 +97,23 @@ void main()
 	v2f nextpt;
 	float magf;
 	unsigned char temprgb[3];
+	float perpaccel;	//accel of the last sample point, in the direction of its advancement (of the next manifold point, usually perpendicular or almost perpendicular)
+	float currperpaccel;	//for the current sample point, same
+	float longaccel;	//same, but now in the perpendicular direction to the manifold point advancement (perpendicular to the perpendicular, so to say)
+	float currlongaccel;	//same, for current
+	float prevlong;	//same, but this is for the last starting point done, for use with the next manifold that spawns off of this one
+	float prevperp;	//perp
 
 #define SPACING	1.0f
 
-#define RGBX	512
-#define RGBY	512
+#define RGBX	333
+#define RGBY	444
 #define MINX	(-10)
-#define MINY	(-10)
-#define SCALE	20
+#define MINY	(-25)
+#define SCALE	10
 
-	unsigned char rgb[3 * RGBX * RGBY];
+	unsigned char rgb[3 * RGBX * RGBY];	//walk space
+	unsigned char rgb2[3 * RGBX * RGBY];	//acceleration space
 	int x, y;
 
 #define MASSES 5
@@ -147,13 +154,18 @@ void main()
 			rgb[3 * (x + y*RGBX) + 0] = 255;
 			rgb[3 * (x + y*RGBX) + 1] = 255;
 			rgb[3 * (x + y*RGBX) + 2] = 255;
+
+			rgb2[3 * (x + y*RGBX) + 0] = 255;
+			rgb2[3 * (x + y*RGBX) + 1] = 255;
+			rgb2[3 * (x + y*RGBX) + 2] = 255;
 		}
 	}
 
 	fp = fopen("out.txt", "w");
 	//return;
 
-	for (startptj = 0; startptj < numpts; startptj++)
+	startptj = 0;
+	//for (startptj = 0; startptj < numpts; startptj++)
 	{
 		for (startpti = 0; startpti < numpts; startpti++)
 		{
@@ -252,18 +264,27 @@ void main()
 			temprgb[0] = rgb[3 * (x + y*RGBX) + 0];
 			temprgb[1] = rgb[3 * (x + y*RGBX) + 1];
 			temprgb[2] = rgb[3 * (x + y*RGBX) + 2];
-
 			rgb[3 * (x + y*RGBX) + 0] = rgb[3 * (x + (RGBY - y - 1)*RGBX) + 0];
 			rgb[3 * (x + y*RGBX) + 1] = rgb[3 * (x + (RGBY - y - 1)*RGBX) + 1];
 			rgb[3 * (x + y*RGBX) + 2] = rgb[3 * (x + (RGBY - y - 1)*RGBX) + 2];
-
 			rgb[3 * (x + (RGBY - y - 1)*RGBX) + 0] = temprgb[0];
 			rgb[3 * (x + (RGBY - y - 1)*RGBX) + 1] = temprgb[1];
 			rgb[3 * (x + (RGBY - y - 1)*RGBX) + 2] = temprgb[2];
+
+			temprgb[0] = rgb2[3 * (x + y*RGBX) + 0];
+			temprgb[1] = rgb2[3 * (x + y*RGBX) + 1];
+			temprgb[2] = rgb2[3 * (x + y*RGBX) + 2];
+			rgb2[3 * (x + y*RGBX) + 0] = rgb2[3 * (x + (RGBY - y - 1)*RGBX) + 0];
+			rgb2[3 * (x + y*RGBX) + 1] = rgb2[3 * (x + (RGBY - y - 1)*RGBX) + 1];
+			rgb2[3 * (x + y*RGBX) + 2] = rgb2[3 * (x + (RGBY - y - 1)*RGBX) + 2];
+			rgb2[3 * (x + (RGBY - y - 1)*RGBX) + 0] = temprgb[0];
+			rgb2[3 * (x + (RGBY - y - 1)*RGBX) + 1] = temprgb[1];
+			rgb2[3 * (x + (RGBY - y - 1)*RGBX) + 2] = temprgb[2];
 		}
 	}
 
 	savepng("out.png", rgb, RGBX, RGBY, 3);
+	savepng("out2.png", rgb2, RGBX, RGBY, 3);
 
 	printf("press to quit");
 	fgets(foo, 2, stdin);
