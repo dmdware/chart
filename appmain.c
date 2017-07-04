@@ -75,6 +75,20 @@ v2f perp2(v2f s, float r)
 	return s2;
 }
 
+v2f turn(v2f s, float r)
+{
+	float r2 = atan2(s.y, s.x) - r;
+	v2f s2;
+	s2.x = cos(r2);
+	s2.y = sin(r2);
+	return s2;
+}
+
+float dot(v2f a, v2f b)
+{
+	return a.x * b.x + a.y * b.y;
+}
+
 void main()
 {
 	v2f start;
@@ -83,7 +97,7 @@ void main()
 	v2f currpt;
 	v2f curraccel;
 //	v2f nextdir;
-	int numexpand = 900;
+	int numexpand = 400;
 	int numpts = 30;
 	int expansioni;
 	int startpti;
@@ -97,19 +111,22 @@ void main()
 	v2f nextpt;
 	float magf;
 	unsigned char temprgb[3];
-	float perpaccel;	//accel of the last sample point, in the direction of its advancement (of the next manifold point, usually perpendicular or almost perpendicular)
-	float currperpaccel;	//for the current sample point, same
-	float longaccel;	//same, but now in the perpendicular direction to the manifold point advancement (perpendicular to the perpendicular, so to say)
-	float currlongaccel;	//same, for current
-	float prevlong;	//same, but this is for the last starting point done, for use with the next manifold that spawns off of this one
-	float prevperp;	//perp
+	float pfa;	//accel of the last sample point, in the direction of its advancement (of the next manifold point, usually perpendicular or almost perpendicular)
+	float cfa;	//for the current sample point, same
+	float psa;	//same, but now in the perpendicular direction to the manifold point advancement (perpendicular to the perpendicular, so to say)
+	float csa;	//same, for current
+	v2f casd;	//accel space dir
+	v2f casp;	//accel space pos
+	//float amagf;
+
+#define MAXGM	5.0f
 
 #define SPACING	1.0f
 
-#define RGBX	333
-#define RGBY	444
-#define MINX	(-10)
-#define MINY	(-25)
+#define RGBX	444
+#define RGBY	222
+#define MINX	(-20)
+#define MINY	(-10)
 #define SCALE	10
 
 	unsigned char rgb[3 * RGBX * RGBY];	//walk space
@@ -172,6 +189,14 @@ void main()
 			currpt.x = start.x + startdir.x * startpti + altdir.x * startptj;
 			currpt.y = start.y + startdir.y * startpti + altdir.y * startptj;
 
+			perpdir.x = 0.5f;
+			perpdir.y = 0.5f;
+			
+			casd.x = 1 / 10.0f;
+			casd.y = 0 / 10.0f;
+			casp.x = start.x + startpti * 0;
+			casp.y = start.y + startpti * 1;
+
 			for (expansioni = 0; expansioni < numexpand; expansioni++)
 			{
 				fprintf(fp, "startpt%d,expansion%d: pt%f,%f\r\n", startpti, expansioni, currpt.x, currpt.y);
@@ -192,12 +217,69 @@ void main()
 				{
 					dx = (masses[massi].p.x - currpt.x);
 					dy = (masses[massi].p.y - currpt.y);
-					curraccel.x += dx * masses[massi].gm / (dx*dx + dy*dy);
-					curraccel.y += dy * masses[massi].gm / (dx*dx + dy*dy);
+
+					//cap the maximum acceleration below threshold (surface) level
+					//if ((dx*dx + dy*dy) <= 1.0f)
+					if (0)
+					{
+						curraccel.x += dx * masses[massi].gm / 1;
+						curraccel.y += dy * masses[massi].gm / 1;
+					}
+					else
+					{
+						curraccel.x += dx * masses[massi].gm / (dx*dx + dy*dy);
+						curraccel.y += dy * masses[massi].gm / (dx*dx + dy*dy);
+					}
 				}
 
-				//perpdir = perp(curraccel);
-				perpdir = perp2(curraccel, - M_PI/19.0f);
+				//amagf = sqrtf(curraccel.x*curraccel.x + curraccel.y*curraccel.y);
+
+				if (expansioni == 0)
+				{
+					//forward (along expansion of manifold points) acceleration
+					//cfa = dot(curraccel, 
+					cfa = sqrtf(curraccel.x*curraccel.x + curraccel.y*curraccel.y);
+					//sideways (perpendicular to expansion of manifold points, but along the direction of the next manifold starting point, if this is starting point 0) acceleration
+				}
+				else
+				{
+					//forward (along expansion of manifold points) acceleration
+					pfa = cfa;
+					cfa = sqrtf(curraccel.x*curraccel.x + curraccel.y*curraccel.y);
+					//sideways (perpendicular to expansion of manifold points, but along the direction of the next manifold starting point, if this is starting point 0) acceleration
+					//get the acceleration offset and thus angle forward
+					//and thus get the angle of rotation of the manifold point to the next
+					//set previous accelerations to the current ones, after using the previous and current ones, in anticipation of the next ones for next iteration
+					//casd = turn(casd, -M_PI * 2.0f * (cfa - pfa) / MAXGM);
+					//casd = turn(casd, -M_PI * 2.0f * (cfa) / MAXGM);
+					//casd = turn(casd, -M_PI * 2.0f / (0.000001f + (cfa - pfa) / MAXGM));
+					casd = turn(casd, -M_PI * 2.0f / (0.000001f + (cfa - pfa) / MAXGM));
+
+					casd.x /= 10.0f;
+					casd.y /= 10.0f;
+					magf = sqrtf(casd.x*casd.x + casd.y*casd.y);
+
+					//for (linei = 0; linei <= magf * SCALE; ++linei)
+					for (linei = 0; linei <= 1 * SCALE; ++linei)
+					{
+						x = SCALE*(casp.x + (float)casd.x / (SCALE / 1) * (float)linei - MINX);
+						y = SCALE*(casp.y + (float)casd.y / (SCALE / 1) * (float)linei - MINY);
+
+						rgb2[(3 * (x + y*RGBX) + 0) % (3 * RGBX*RGBY)] = 255 * (1 - (float)expansioni / (float)numexpand);
+						//rgb2[(3 * (x + y*RGBX) + 0) % (3 * RGBX*RGBY)] = 255 * (1 - (float)(cfa - pfa) / (float)MAXGM);
+						rgb2[(3 * (x + y*RGBX) + 1) % (3 * RGBX*RGBY)] = 255 * (1 - (float)startptj / (float)numpts);
+						//rgb2[(3 * (x + y*RGBX) + 1) % (3 * RGBX*RGBY)] = 255 * (1 - (float)(cfa - pfa) / (float)MAXGM);
+						rgb2[(3 * (x + y*RGBX) + 2) % (3 * RGBX*RGBY)] = 255 * (1 - (float)startpti / (float)numpts);
+						//rgb2[(3 * (x + y*RGBX) + 2) % (3 * RGBX*RGBY)] = 255 * (1 - (float)(cfa - pfa) / (float)MAXGM);
+					}
+
+					casp.x += casd.x;
+					casp.y += casd.y;
+				}
+
+#if 01
+				perpdir = perp(curraccel);
+				//perpdir = perp2(curraccel, - M_PI/19.0f);
 
 				dx = curraccel.x;
 				dy = curraccel.y;
@@ -211,6 +293,7 @@ void main()
 
 				perpdir.x /= 10.0f;
 				perpdir.y /= 10.0f;
+#endif
 
 				nextpt.x = currpt.x + perpdir.x;
 				nextpt.y = currpt.y + perpdir.y;
@@ -226,8 +309,11 @@ void main()
 					y = SCALE*(currpt.y + (float)perpdir.y / (SCALE / 1) * (float)linei - MINY);
 
 					rgb[(3 * (x + y*RGBX) + 0) % (3 * RGBX*RGBY)] = 255 * (1 - (float)expansioni / (float)numexpand);
+					//rgb[(3 * (x + y*RGBX) + 0) % (3 * RGBX*RGBY)] = 255 * (1 - (float)(cfa - pfa) / (float)MAXGM);
 					rgb[(3 * (x + y*RGBX) + 1) % (3 * RGBX*RGBY)] = 255 * (1 - (float)startptj / (float)numpts);
+					//rgb[(3 * (x + y*RGBX) + 1) % (3 * RGBX*RGBY)] = 255 * (1 - (float)(cfa - pfa) / (float)MAXGM);
 					rgb[(3 * (x + y*RGBX) + 2) % (3 * RGBX*RGBY)] = 255 * (1 - (float)startpti / (float)numpts);
+					//rgb[(3 * (x + y*RGBX) + 2) % (3 * RGBX*RGBY)] = 255 * ( 1 - (float)(cfa - pfa) / (float)MAXGM);
 				}
 
 				currpt.x = nextpt.x;
